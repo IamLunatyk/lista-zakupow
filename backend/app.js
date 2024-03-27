@@ -1,27 +1,29 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const morgan = require("morgan");
-const bodyparser = require("body-parser");
+const bodyParser = require("body-parser");
 const cors = require("cors");
 const connectDB = require("./connect.js");
 const app = express();
 
 console.log("Working");
 
+app.use(express.static(__dirname + "/public"));
+app.set("view engine", "ejs");
 app.use(morgan("tiny"));
 app.use(
-  bodyparser.urlencoded({
+  bodyParser.urlencoded({
     extended: true,
   })
 );
-app.use(cors());
 app.use(express.json());
+// app.use(methodOverride("_method"));
 
 dotenv.config({
   path: "./.env",
 });
 
-var ProductDb = require("./model.js");
+const ProductDb = require("./model.js");
 
 console.log(process.env.DATABASE_URI);
 
@@ -32,13 +34,15 @@ app.get("/", (req, res) => {
 });
 
 app.listen(process.env.PORT, () => {
-  console.log("server is running");
+  console.log(`server is running on port ${process.env.PORT}`);
 });
 
 app.get("/products", (req, res) => {
   ProductDb.find()
-    .then((product) => {
-      res.send(product);
+    .then((products) => {
+      res.render("products.ejs", {
+        products: products,
+      });
     })
     .catch((err) => {
       res.status(500).send(err);
@@ -52,17 +56,38 @@ app.post("/products", (req, res) => {
   }
   const product = new ProductDb({
     name: req.body.name,
-    checked: req.body.checked ?? false,
+    green: req.body.green ?? false,
   });
 
   product
-    .save(product)
+    .save()
     .then((data) => {
-      res.send(data);
+      res.redirect("/products");
     })
     .catch((err) => {
       res
         .status(500)
         .send({ message: err.message || "Error while saving to db" });
+    });
+});
+
+app.get("/products/delete/:id", (req, res) => {
+  console.log(req.params.id);
+  ProductDb.findByIdAndDelete(req.params.id).then((result) => {
+    res.redirect("/products");
+  });
+});
+
+app.get("/products/update/:id", (req, res) => {
+  ProductDb.findById(req.params.id)
+    .exec()
+    .then((result) => {
+      console.log(["result", result]);
+
+      ProductDb.findByIdAndUpdate(result._id, {
+        green: !result.green,
+      }).then((result) => {
+        res.redirect("/products");
+      });
     });
 });
