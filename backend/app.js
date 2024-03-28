@@ -29,15 +29,19 @@ console.log(process.env.DATABASE_URI);
 
 connectDB();
 
-// app.get("/", (req, res) => {
-//   res.send("test");
-// });
+app.get("/", (req, res) => {
+  res.send(`
+    <form action="/products" method="get">
+      <button type="submit">Przejdź do produktów</button>
+    </form>
+  `);
+});
 
 app.listen(process.env.PORT, () => {
   console.log(`server is running on port ${process.env.PORT}`);
 });
 
-app.get("/", (req, res) => {
+app.get("/products", (req, res) => {
   ProductDb.find()
     .then((products) => {
       res.render("products.ejs", {
